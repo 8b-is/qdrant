@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use std::ops::Range;
 use std::sync::atomic::AtomicBool;
 
@@ -149,6 +150,17 @@ impl VectorStorage for VolatileSparseVectorStorage {
             Ok(Some(vector)) => Some(CowVector::from(vector)),
             _ => None,
         }
+    }
+
+    fn get_vector_bytes_opt<P: AccessPattern>(&self, _key: PointOffsetType) -> Option<&[u8]> {
+        None // not implemented
+    }
+
+    fn get_vector_layout(&self) -> OperationResult<Layout> {
+        // Sparse vectors don't have a fixed layout as they can vary in size
+        Err(OperationError::service_error(
+            "Sparse vectors do not have a fixed layout",
+        ))
     }
 
     fn insert_vector(

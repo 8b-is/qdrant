@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions, create_dir_all};
 use std::io::{self, BufWriter, Write};
@@ -11,6 +12,7 @@ use common::counter::hardware_counter::HardwareCounterCell;
 use common::types::PointOffsetType;
 use memory::fadvise::clear_disk_cache;
 use memory::mmap_ops;
+use zerocopy::IntoBytes;
 
 use crate::common::Flusher;
 use crate::common::operation_error::{OperationError, OperationResult, check_process_stopped};
@@ -194,6 +196,18 @@ impl<T: PrimitiveVectorElement> VectorStorage for MemmapDenseVectorStorage<T> {
             .unwrap()
             .get_vector_opt::<P>(key)
             .map(|vector| T::slice_to_float_cow(vector.into()).into())
+    }
+
+    fn get_vector_bytes_opt<P: AccessPattern>(&self, key: PointOffsetType) -> Option<&[u8]> {
+        self.mmap_store
+            .as_ref()
+            .unwrap()
+            .get_vector_opt::<P>(key)
+            .map(|vector| vector.as_bytes())
+    }
+
+    fn get_vector_layout(&self) -> OperationResult<Layout> {
+        Ok(Layout::array::<T>(self.vector_dim()).unwrap())
     }
 
     fn insert_vector(

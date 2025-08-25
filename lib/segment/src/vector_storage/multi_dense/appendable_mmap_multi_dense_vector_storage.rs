@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use std::fs::create_dir_all;
 use std::ops::Range;
 use std::path::{Path, PathBuf};
@@ -194,6 +195,17 @@ impl<
                 multi_dense_vector,
             )))
         })
+    }
+
+    fn get_vector_bytes_opt<P: AccessPattern>(&self, _key: PointOffsetType) -> Option<&[u8]> {
+        None // not implemented
+    }
+
+    fn get_vector_layout(&self) -> OperationResult<Layout> {
+        // Multi-dense vectors don't have a fixed layout as they can vary in size
+        Err(OperationError::service_error(
+            "Multi-dense vectors do not have a fixed layout",
+        ))
     }
 
     fn insert_vector(

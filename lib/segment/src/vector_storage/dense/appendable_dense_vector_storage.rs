@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use std::borrow::Cow;
 use std::fs::create_dir_all;
 use std::mem::MaybeUninit;
@@ -10,6 +11,7 @@ use common::counter::hardware_counter::HardwareCounterCell;
 use common::maybe_uninit::maybe_uninit_fill_from;
 use common::types::PointOffsetType;
 use memory::madvise::AdviceSetting;
+use zerocopy::IntoBytes;
 
 use crate::common::Flusher;
 use crate::common::flags::bitvec_flags::BitvecFlags;
@@ -136,6 +138,16 @@ impl<T: PrimitiveVectorElement, S: ChunkedVectorStorage<T>> VectorStorage
         self.vectors
             .get::<P>(key as VectorOffsetType)
             .map(|slice| CowVector::from(T::slice_to_float_cow(slice.into())))
+    }
+
+    fn get_vector_bytes_opt<P: AccessPattern>(&self, key: PointOffsetType) -> Option<&[u8]> {
+        self.vectors
+            .get::<P>(key as VectorOffsetType)
+            .map(|slice| slice.as_bytes())
+    }
+
+    fn get_vector_layout(&self) -> OperationResult<Layout> {
+        Ok(Layout::array::<T>(self.vectors.dim()).unwrap())
     }
 
     fn insert_vector(

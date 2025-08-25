@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use std::borrow::Cow;
 use std::ops::Range;
 use std::sync::atomic::AtomicBool;
@@ -6,6 +7,7 @@ use bitvec::prelude::{BitSlice, BitVec};
 use common::counter::hardware_counter::HardwareCounterCell;
 use common::ext::BitSliceExt as _;
 use common::types::PointOffsetType;
+use zerocopy::IntoBytes;
 
 use crate::common::Flusher;
 use crate::common::operation_error::{OperationResult, check_process_stopped};
@@ -112,6 +114,16 @@ impl<T: PrimitiveVectorElement> VectorStorage for VolatileDenseVectorStorage<T> 
         self.vectors
             .get_opt(key as VectorOffsetType)
             .map(|slice| CowVector::from(T::slice_to_float_cow(slice.into())))
+    }
+
+    fn get_vector_bytes_opt<P: AccessPattern>(&self, key: PointOffsetType) -> Option<&[u8]> {
+        self.vectors
+            .get_opt(key as VectorOffsetType)
+            .map(|slice| slice.as_bytes())
+    }
+
+    fn get_vector_layout(&self) -> OperationResult<Layout> {
+        Ok(Layout::array::<T>(self.dim).unwrap())
     }
 
     fn insert_vector(

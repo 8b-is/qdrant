@@ -1,3 +1,4 @@
+use std::alloc::Layout;
 use std::mem::MaybeUninit;
 use std::ops::Range;
 use std::path::PathBuf;
@@ -88,6 +89,12 @@ pub trait VectorStorage {
 
     /// Get the vector by the given key if it exists
     fn get_vector_opt<P: AccessPattern>(&self, key: PointOffsetType) -> Option<CowVector<'_>>;
+
+    /// Get the raw bytes of the vector by the given key if it exists
+    fn get_vector_bytes_opt<P: AccessPattern>(&self, key: PointOffsetType) -> Option<&[u8]>;
+
+    /// Get layout for a single vector
+    fn get_vector_layout(&self) -> OperationResult<Layout>;
 
     fn insert_vector(
         &mut self,
@@ -916,6 +923,102 @@ impl VectorStorage for VectorStorageEnum {
             VectorStorageEnum::MultiDenseAppendableInRam(v) => v.get_vector_opt::<P>(key),
             VectorStorageEnum::MultiDenseAppendableInRamByte(v) => v.get_vector_opt::<P>(key),
             VectorStorageEnum::MultiDenseAppendableInRamHalf(v) => v.get_vector_opt::<P>(key),
+        }
+    }
+
+    fn get_vector_bytes_opt<P: AccessPattern>(&self, key: PointOffsetType) -> Option<&[u8]> {
+        match self {
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::DenseSimple(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::DenseSimpleByte(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::DenseSimpleHalf(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseVolatile(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(test)]
+            VectorStorageEnum::DenseVolatileByte(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(test)]
+            VectorStorageEnum::DenseVolatileHalf(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseMemmap(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseMemmapByte(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseMemmapHalf(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseAppendableMemmap(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseAppendableMemmapByte(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseAppendableMemmapHalf(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseAppendableInRam(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseAppendableInRamByte(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::DenseAppendableInRamHalf(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::SparseSimple(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::SparseVolatile(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::SparseMmap(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::MultiDenseSimple(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::MultiDenseSimpleByte(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::MultiDenseSimpleHalf(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::MultiDenseVolatile(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(test)]
+            VectorStorageEnum::MultiDenseVolatileByte(v) => v.get_vector_bytes_opt::<P>(key),
+            #[cfg(test)]
+            VectorStorageEnum::MultiDenseVolatileHalf(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::MultiDenseAppendableMemmap(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::MultiDenseAppendableMemmapByte(v) => {
+                v.get_vector_bytes_opt::<P>(key)
+            }
+            VectorStorageEnum::MultiDenseAppendableMemmapHalf(v) => {
+                v.get_vector_bytes_opt::<P>(key)
+            }
+            VectorStorageEnum::MultiDenseAppendableInRam(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::MultiDenseAppendableInRamByte(v) => v.get_vector_bytes_opt::<P>(key),
+            VectorStorageEnum::MultiDenseAppendableInRamHalf(v) => v.get_vector_bytes_opt::<P>(key),
+        }
+    }
+
+    fn get_vector_layout(&self) -> OperationResult<Layout> {
+        match self {
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::DenseSimple(v) => v.get_vector_layout(),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::DenseSimpleByte(v) => v.get_vector_layout(),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::DenseSimpleHalf(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseVolatile(v) => v.get_vector_layout(),
+            #[cfg(test)]
+            VectorStorageEnum::DenseVolatileByte(v) => v.get_vector_layout(),
+            #[cfg(test)]
+            VectorStorageEnum::DenseVolatileHalf(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseMemmap(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseMemmapByte(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseMemmapHalf(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseAppendableMemmap(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseAppendableMemmapByte(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseAppendableMemmapHalf(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseAppendableInRam(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseAppendableInRamByte(v) => v.get_vector_layout(),
+            VectorStorageEnum::DenseAppendableInRamHalf(v) => v.get_vector_layout(),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::SparseSimple(v) => v.get_vector_layout(),
+            VectorStorageEnum::SparseVolatile(v) => v.get_vector_layout(),
+            VectorStorageEnum::SparseMmap(v) => v.get_vector_layout(),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::MultiDenseSimple(v) => v.get_vector_layout(),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::MultiDenseSimpleByte(v) => v.get_vector_layout(),
+            #[cfg(feature = "rocksdb")]
+            VectorStorageEnum::MultiDenseSimpleHalf(v) => v.get_vector_layout(),
+            VectorStorageEnum::MultiDenseVolatile(v) => v.get_vector_layout(),
+            #[cfg(test)]
+            VectorStorageEnum::MultiDenseVolatileByte(v) => v.get_vector_layout(),
+            #[cfg(test)]
+            VectorStorageEnum::MultiDenseVolatileHalf(v) => v.get_vector_layout(),
+            VectorStorageEnum::MultiDenseAppendableMemmap(v) => v.get_vector_layout(),
+            VectorStorageEnum::MultiDenseAppendableMemmapByte(v) => v.get_vector_layout(),
+            VectorStorageEnum::MultiDenseAppendableMemmapHalf(v) => v.get_vector_layout(),
+            VectorStorageEnum::MultiDenseAppendableInRam(v) => v.get_vector_layout(),
+            VectorStorageEnum::MultiDenseAppendableInRamByte(v) => v.get_vector_layout(),
+            VectorStorageEnum::MultiDenseAppendableInRamHalf(v) => v.get_vector_layout(),
         }
     }
 
