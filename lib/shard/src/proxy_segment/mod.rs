@@ -55,7 +55,10 @@ impl ProxySegment {
                 let already_deleted = raw_segment_guard.get_deleted_points_bitvec();
                 Some(already_deleted)
             }
-            LockedSegment::Proxy(_) => None,
+            LockedSegment::Proxy(_) => {
+                log::debug!("Double proxy segment creation");
+                None
+            }
         };
         let wrapped_config = segment.get().read().config().clone();
         ProxySegment {
@@ -132,6 +135,7 @@ impl ProxySegment {
         point_id: PointIdType,
         hw_counter: &HardwareCounterCell,
     ) -> OperationResult<bool> {
+        log::debug!("moving point {point_id} to write segment");
         let deleted_points_guard = self.deleted_points.upgradable_read();
 
         let (point_offset, local_version) = {
@@ -157,8 +161,11 @@ impl ProxySegment {
 
             // Point doesn't exist in wrapped segment - do nothing
             let Some(local_version) = wrapped_segment_guard.point_version(point_id) else {
+                log::debug!("point {point_id} does not exist in wrapped segment");
                 return Ok(false);
             };
+
+            log::debug!("moving point {point_id} with version {local_version} to write segment");
 
             // Equal or higher point version is already moved into write segment - delete from
             // wrapped segment and do not move it again
@@ -166,10 +173,19 @@ impl ProxySegment {
                 .get(&point_id)
                 .is_some_and(|&deleted| deleted.local_version >= local_version)
             {
+                log::debug!("Equal or higher point version is already moved into write segment");
                 drop(deleted_points_guard);
                 self.set_deleted_offset(point_offset);
                 return Ok(false);
             }
+
+            let exists = wrapped_segment_guard.all_vectors(point_id, hw_counter);
+            if let Err(exists) = exists {
+                log::debug!(
+                    "vectors point {point_id} does not exist in wrapped segment but it has a version!"
+                );
+                return Err(exists);
+            };
 
             let (all_vectors, payload) = (
                 wrapped_segment_guard.all_vectors(point_id, hw_counter)?,
@@ -191,6 +207,7 @@ impl ProxySegment {
 
         {
             let mut deleted_points_write = RwLockUpgradableReadGuard::upgrade(deleted_points_guard);
+            log::debug!("marking point {point_id} as deleted in wrapped segment");
             deleted_points_write.insert(
                 point_id,
                 ProxyDeletedPoint {
@@ -297,10 +314,10 @@ impl ProxySegment {
                     for (point_id, versions) in deleted_points.iter() {
                         // Delete points here with their operation version, that'll bump the optimized
                         // segment version and will ensure we flush the new changes
+                        let point_version = wrapped_segment.point_version(*point_id).unwrap_or(0);
                         debug_assert!(
-                            versions.operation_version
-                                >= wrapped_segment.point_version(*point_id).unwrap_or(0),
-                            "proxied point deletes should have newer version than point in segment",
+                            versions.operation_version >= point_version,
+                            "proxied point deletes should have newer version than point in segment ({versions:?} >= {point_version})",
                         );
                         wrapped_segment.delete_point(
                             versions.operation_version,

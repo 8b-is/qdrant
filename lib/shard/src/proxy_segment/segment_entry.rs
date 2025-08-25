@@ -180,6 +180,11 @@ impl SegmentEntry for ProxySegment {
         vectors: NamedVectors,
         hw_counter: &HardwareCounterCell,
     ) -> OperationResult<bool> {
+        log::debug!(
+            "Upsert_point in ProxySegment: op_num={}, point_id={}",
+            op_num,
+            point_id
+        );
         self.move_if_exists(op_num, point_id, hw_counter)?;
         self.write_segment
             .get()
@@ -194,7 +199,11 @@ impl SegmentEntry for ProxySegment {
         hw_counter: &HardwareCounterCell,
     ) -> OperationResult<bool> {
         let mut was_deleted = false;
-
+        log::debug!(
+            "delete_point in ProxySegment: op_num={}, point_id={}",
+            op_num,
+            point_id
+        );
         let point_offset = match &self.wrapped_segment {
             LockedSegment::Original(raw_segment) => {
                 let point_offset = raw_segment.read().get_internal_id(point_id);
@@ -214,7 +223,13 @@ impl SegmentEntry for ProxySegment {
                 point_offset
             }
             LockedSegment::Proxy(proxy) => {
-                if proxy.read().has_point(point_id) {
+                log::debug!(
+                    "Double proxy delete_point: op_num={}, point_id={}",
+                    op_num,
+                    point_id
+                );
+                let proxy_read = proxy.read();
+                if proxy_read.has_point(point_id) {
                     was_deleted = self
                         .deleted_points
                         .write()
@@ -233,6 +248,11 @@ impl SegmentEntry for ProxySegment {
 
         self.set_deleted_offset(point_offset);
 
+        log::debug!(
+            "delete_point to write segment: op_num={}, point_id={}",
+            op_num,
+            point_id
+        );
         let was_deleted_in_writable = self
             .write_segment
             .get()

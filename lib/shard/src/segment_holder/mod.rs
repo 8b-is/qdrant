@@ -132,6 +132,7 @@ impl SegmentHolder {
     /// The segment gets assigned a new unique ID.
     pub fn add_new_locked(&mut self, segment: LockedSegment) -> SegmentId {
         let segment_id = self.generate_new_key();
+        log::debug!("Adding new segment with ID: {segment_id}");
         self.add_existing_locked(segment_id, segment);
         segment_id
     }
@@ -151,6 +152,7 @@ impl SegmentHolder {
     ///
     /// The segment gets the provided ID, which must not be in the segment holder yet.
     pub fn add_existing_locked(&mut self, segment_id: SegmentId, segment: LockedSegment) {
+        log::debug!("Add new segment with ID: {segment_id}");
         debug_assert!(
             self.get(segment_id).is_none(),
             "cannot add segment with ID {segment_id}, it already exists",
@@ -163,6 +165,7 @@ impl SegmentHolder {
     }
 
     pub fn remove(&mut self, remove_ids: &[SegmentId]) -> Vec<LockedSegment> {
+        log::debug!("Removing segments: {remove_ids:?}");
         let mut removed_segments = vec![];
         for remove_id in remove_ids {
             let removed_segment = self.appendable_segments.remove(remove_id);
@@ -197,6 +200,7 @@ impl SegmentHolder {
     where
         T: Into<LockedSegment>,
     {
+        log::debug!("Swapping segments: removing {remove_ids:?} and adding new segment");
         let new_id = self.add_new(segment);
         (new_id, self.remove(remove_ids))
     }
@@ -219,6 +223,7 @@ impl SegmentHolder {
     where
         T: Into<LockedSegment>,
     {
+        log::debug!("Replacing segment with ID {segment_id} by new segment");
         // Remove existing segment, check precondition
         let mut removed = self.remove(&[segment_id]);
         if removed.is_empty() {
@@ -1073,6 +1078,7 @@ impl SegmentHolder {
         LockedSegment,
         RwLockUpgradableReadGuard<'a, SegmentHolder>,
     )> {
+        log::debug!("Proxying all segments for snapshotting");
         // This counter will be used to measure operations on temp segment,
         // which is part of internal process and can be ignored
         let hw_counter = HardwareCounterCell::disposable();
@@ -1205,6 +1211,10 @@ impl SegmentHolder {
         proxies: Vec<(SegmentId, LockedSegment)>,
         tmp_segment: LockedSegment,
     ) -> OperationResult<()> {
+        log::debug!(
+            "Unproxying all segments after snapshotting ({:?})",
+            proxies.len()
+        );
         // We must propagate all changes in the proxy into their wrapped segments, as we'll put the
         // wrapped segment back into the segment holder. This can be an expensive step if we
         // collected a lot of changes in the proxy, so we do this in two batches to prevent
