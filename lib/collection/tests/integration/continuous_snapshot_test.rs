@@ -10,7 +10,7 @@ use collection::operations::point_ops::{
     WriteOrdering,
 };
 use collection::operations::shared_storage_config::SharedStorageConfig;
-use collection::operations::types::{CollectionResult, NodeType, VectorsConfig};
+use collection::operations::types::{CollectionResult, NodeType, UpdateStatus, VectorsConfig};
 use collection::operations::vector_params_builder::VectorParamsBuilder;
 use collection::shards::channel_service::ChannelService;
 use collection::shards::collection_shard_distribution::CollectionShardDistribution;
@@ -98,47 +98,26 @@ async fn test_continuous_snapshot() {
     let collection = Arc::new(collection);
     let stop_flag = Arc::new(AtomicBool::new(false));
 
-    // Loop uploads and delete 100 points
-    let points_count = 10;
-    let batch_size = 2;
-    let iterations = points_count / batch_size;
+    // Continuously insert the same point
+    let points_count = 1;
     let points_task = {
         let collection = Arc::clone(&collection);
         let stop_flag = Arc::clone(&stop_flag);
         tokio::spawn(async move {
             while !stop_flag.load(Ordering::Relaxed) {
-                // Delete all points
-                let delete_points =
-                    CollectionUpdateOperations::PointOperation(PointOperations::DeletePoints {
-                        ids: (0..points_count).map(|i| i.into()).collect(),
-                    });
-                let hw_counter = HwMeasurementAcc::disposable();
-                collection
-                    .update_from_client_simple(
-                        delete_points,
-                        true,
-                        WriteOrdering::default(),
-                        hw_counter,
-                    )
-                    .await?;
-
-                for batch in 0..iterations {
-                    // Insert 10 points
-                    let points: Vec<_> = (batch * batch_size..(batch + 1) * batch_size)
-                        .map(|i| PointStructPersisted {
-                            id: i.into(),
-                            vector: VectorStructPersisted::Single(vec![i as f32, 0.0, 0.0, 0.0]),
-                            payload: Some(
-                                serde_json::from_str(r#"{"number": "John Doe"}"#).unwrap(),
-                            ),
-                        })
-                        .collect();
+                for i in 0..points_count {
+                    // Insert one point at a time
+                    let point = PointStructPersisted {
+                        id: i.into(),
+                        vector: VectorStructPersisted::Single(vec![i as f32, 0.0, 0.0, 0.0]),
+                        payload: Some(serde_json::from_str(r#"{"number": "John Doe"}"#).unwrap()),
+                    };
                     let insert_points =
                         CollectionUpdateOperations::PointOperation(PointOperations::UpsertPoints(
-                            PointInsertOperationsInternal::PointsList(points),
+                            PointInsertOperationsInternal::PointsList(vec![point]),
                         ));
                     let hw_counter = HwMeasurementAcc::disposable();
-                    let _resp = collection
+                    let insert = collection
                         .update_from_client_simple(
                             insert_points,
                             true,
@@ -146,6 +125,7 @@ async fn test_continuous_snapshot() {
                             hw_counter,
                         )
                         .await?;
+                    assert_eq!(insert.status, UpdateStatus::Completed);
                 }
             }
             CollectionResult::Ok(())

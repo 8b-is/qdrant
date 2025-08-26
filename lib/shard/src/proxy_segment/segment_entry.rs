@@ -199,13 +199,13 @@ impl SegmentEntry for ProxySegment {
         hw_counter: &HardwareCounterCell,
     ) -> OperationResult<bool> {
         let mut was_deleted = false;
-        log::debug!(
-            "delete_point in ProxySegment: op_num={}, point_id={}",
-            op_num,
-            point_id
-        );
         let point_offset = match &self.wrapped_segment {
             LockedSegment::Original(raw_segment) => {
+                log::debug!(
+                    "delete_point in ProxySegment: op_num={}, point_id={}",
+                    op_num,
+                    point_id
+                );
                 let point_offset = raw_segment.read().get_internal_id(point_id);
                 if point_offset.is_some() {
                     was_deleted = self
@@ -224,7 +224,7 @@ impl SegmentEntry for ProxySegment {
             }
             LockedSegment::Proxy(proxy) => {
                 log::debug!(
-                    "Double proxy delete_point: op_num={}, point_id={}",
+                    "delete_point in double ProxySegment op_num={}, point_id={}",
                     op_num,
                     point_id
                 );

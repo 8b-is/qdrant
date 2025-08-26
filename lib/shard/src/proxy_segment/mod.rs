@@ -135,7 +135,6 @@ impl ProxySegment {
         point_id: PointIdType,
         hw_counter: &HardwareCounterCell,
     ) -> OperationResult<bool> {
-        log::debug!("moving point {point_id} to write segment");
         let deleted_points_guard = self.deleted_points.upgradable_read();
 
         let (point_offset, local_version) = {
@@ -144,10 +143,14 @@ impl ProxySegment {
                 Option<PointOffsetType>,
             ) = match &self.wrapped_segment {
                 LockedSegment::Original(raw_segment) => {
+                    log::debug!("moving point {point_id} to write segment");
                     let point_offset = raw_segment.read().get_internal_id(point_id);
                     (raw_segment.clone(), point_offset)
                 }
-                LockedSegment::Proxy(sub_proxy) => (sub_proxy.clone(), None),
+                LockedSegment::Proxy(sub_proxy) => {
+                    log::debug!("moving point {point_id} to proxy write segment");
+                    (sub_proxy.clone(), None)
+                }
             };
 
             let wrapped_segment_guard = wrapped_segment.read();
@@ -315,15 +318,15 @@ impl ProxySegment {
                         // Delete points here with their operation version, that'll bump the optimized
                         // segment version and will ensure we flush the new changes
                         let point_version = wrapped_segment.point_version(*point_id).unwrap_or(0);
-                        debug_assert!(
-                            versions.operation_version >= point_version,
-                            "proxied point deletes should have newer version than point in segment ({versions:?} >= {point_version})",
-                        );
-                        wrapped_segment.delete_point(
-                            versions.operation_version,
-                            *point_id,
-                            &HardwareCounterCell::disposable(), // Internal operation: no need to measure.
-                        )?;
+                            debug_assert!(
+                                versions.operation_version >= point_version,
+                                "proxied point deletes should have newer version than point in segment (point_id:{point_id} {versions:?} >= {point_version})",
+                            );
+                            wrapped_segment.delete_point(
+                                versions.operation_version,
+                                *point_id,
+                                &HardwareCounterCell::disposable(), // Internal operation: no need to measure.
+                            )?;
                     }
                     OperationResult::Ok(())
                 })?;
