@@ -546,9 +546,9 @@ impl SegmentHolder {
         ) -> OperationResult<bool>,
     {
         let (to_update, to_delete) = self.find_points_to_update_and_delete(ids);
-
         // Delete old points first, because we want to handle copy-on-write in multiple proxy segments properly
-        for (segment_id, points) in to_delete {
+        for (segment_id, mut points) in to_delete {
+            points.sort_unstable();
             let segment = self.get(segment_id).unwrap();
             let segment_arc = segment.get();
             let mut write_segment = segment_arc.write();
@@ -565,7 +565,8 @@ impl SegmentHolder {
 
         // Apply point operations to selected segments
         let mut applied_points = 0;
-        for (segment_id, points) in to_update {
+        for (segment_id, mut points) in to_update {
+            points.sort_unstable();
             let segment = self.get(segment_id).unwrap();
             let segment_arc = segment.get();
             let mut write_segment = segment_arc.write();
