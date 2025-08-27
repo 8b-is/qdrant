@@ -143,12 +143,12 @@ impl ProxySegment {
                 Option<PointOffsetType>,
             ) = match &self.wrapped_segment {
                 LockedSegment::Original(raw_segment) => {
-                    log::debug!("moving point {point_id} to write segment");
+                    log::debug!("moving point {point_id} from wrapped to write segment");
                     let point_offset = raw_segment.read().get_internal_id(point_id);
                     (raw_segment.clone(), point_offset)
                 }
                 LockedSegment::Proxy(sub_proxy) => {
-                    log::debug!("moving point {point_id} to proxy write segment");
+                    log::debug!("moving point {point_id} to wrapped proxy to write segment");
                     (sub_proxy.clone(), None)
                 }
             };
@@ -182,17 +182,11 @@ impl ProxySegment {
                 return Ok(false);
             }
 
-            let exists = wrapped_segment_guard.all_vectors(point_id, hw_counter);
-            if let Err(exists) = exists {
-                log::debug!(
-                    "vectors point {point_id} does not exist in wrapped segment but it has a version!"
-                );
-                return Err(exists);
-            };
-
             let (all_vectors, payload) = (
-                wrapped_segment_guard.all_vectors(point_id, hw_counter)?,
-                wrapped_segment_guard.payload(point_id, hw_counter)?,
+                wrapped_segment_guard.all_vectors(point_id, hw_counter)
+                    .inspect_err(|err| log::error!("vectors point {point_id} does not exist in wrapped segment but it has a version:{local_version} {:?}", err))?,
+                wrapped_segment_guard.payload(point_id, hw_counter)
+                    .inspect_err(|err| log::error!("payload point {point_id} does not exist in wrapped segment but it has a version:{local_version} {:?}", err))?,
             );
 
             {
@@ -318,15 +312,15 @@ impl ProxySegment {
                         // Delete points here with their operation version, that'll bump the optimized
                         // segment version and will ensure we flush the new changes
                         let point_version = wrapped_segment.point_version(*point_id).unwrap_or(0);
-                            debug_assert!(
-                                versions.operation_version >= point_version,
-                                "proxied point deletes should have newer version than point in segment (point_id:{point_id} {versions:?} >= {point_version})",
-                            );
-                            wrapped_segment.delete_point(
-                                versions.operation_version,
-                                *point_id,
-                                &HardwareCounterCell::disposable(), // Internal operation: no need to measure.
-                            )?;
+                        debug_assert!(
+                            versions.operation_version >= point_version,
+                            "proxied point deletes should have newer version than point in segment (point_id:{point_id} {versions:?} >= {point_version})",
+                        );
+                        wrapped_segment.delete_point(
+                            versions.operation_version,
+                            *point_id,
+                            &HardwareCounterCell::disposable(), // Internal operation: no need to measure.
+                        ).inspect_err(|err| log::error!("propagation delete failed point_id:{point_id}:{err:?}"))?;
                     }
                     OperationResult::Ok(())
                 })?;

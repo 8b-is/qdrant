@@ -1169,6 +1169,7 @@ impl SegmentHolder {
         // should be very fast, as we already propagated all changes in the first, which is why we
         // can hold a write lock. Once done, we can swap out the proxy for the wrapped shard.
 
+        log::debug!("try_unproxying segment {segment_id}");
         let proxy_segment = match proxy_segment {
             LockedSegment::Proxy(proxy_segment) => proxy_segment,
             LockedSegment::Original(_) => {
@@ -1180,6 +1181,7 @@ impl SegmentHolder {
         };
 
         // Batch 1: propagate changes to wrapped segment with segment holder read lock
+        log::debug!("Batch 1: propagate changes to wrapped segment with segment holder read lock");
         if let Err(err) = proxy_segment.read().propagate_to_wrapped() {
             log::error!(
                 "Propagating proxy segment {segment_id} changes to wrapped segment failed, ignoring: {err}",
@@ -1191,6 +1193,7 @@ impl SegmentHolder {
         // Batch 2: propagate changes to wrapped segment with segment holder write lock
         // Propagate proxied changes to wrapped segment, take it out and swap with proxy
         // Important: put the wrapped segment back with its original segment ID
+        log::debug!("Batch 2: propagate changes to wrapped segment with segment holder write lock");
         let wrapped_segment = {
             let proxy_segment = proxy_segment.read();
             if let Err(err) = proxy_segment.propagate_to_wrapped() {
