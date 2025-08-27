@@ -1180,7 +1180,8 @@ impl SegmentHolder {
         };
 
         // Batch 1: propagate changes to wrapped segment with segment holder read lock
-        if let Err(err) = proxy_segment.read().propagate_to_wrapped() {
+        let proxy_segment = proxy_segment.read();
+        if let Err(err) = proxy_segment.propagate_to_wrapped() {
             log::error!(
                 "Propagating proxy segment {segment_id} changes to wrapped segment failed, ignoring: {err}",
             );
@@ -1192,7 +1193,6 @@ impl SegmentHolder {
         // Propagate proxied changes to wrapped segment, take it out and swap with proxy
         // Important: put the wrapped segment back with its original segment ID
         let wrapped_segment = {
-            let proxy_segment = proxy_segment.read();
             if let Err(err) = proxy_segment.propagate_to_wrapped() {
                 log::error!(
                     "Propagating proxy segment {segment_id} changes to wrapped segment failed, ignoring: {err}",
