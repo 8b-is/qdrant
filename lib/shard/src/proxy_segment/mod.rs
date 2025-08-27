@@ -153,7 +153,8 @@ impl ProxySegment {
                 }
             };
 
-            let wrapped_segment_guard = wrapped_segment.read();
+            // Prevent other operations from accessing the wrapped segment while we move the point
+            let wrapped_segment_guard = wrapped_segment.write();
 
             // Since `deleted_points` are shared between multiple ProxySegments,
             // It is possible that some other Proxy moved its point with different version already
