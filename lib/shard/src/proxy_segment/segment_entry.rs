@@ -387,8 +387,10 @@ impl SegmentEntry for ProxySegment {
             .vector_data
             .keys()
         {
-            if let Some(vector) = self.vector(vector_name, point_id, hw_counter)
-                    .inspect_err(|_| log::debug!("could not find vector {vector_name}"))? {
+            if let Some(vector) = self
+                .vector(vector_name, point_id, hw_counter)
+                .inspect_err(|_| log::debug!("could not find vector {vector_name}"))?
+            {
                 result.insert(vector_name.clone(), vector);
             }
         }
@@ -400,8 +402,10 @@ impl SegmentEntry for ProxySegment {
             .sparse_vector_data
             .keys()
         {
-            if let Some(vector) = self.vector(vector_name, point_id, hw_counter)
-                .inspect_err(|_| log::debug!("could not find sparse vector {vector_name}"))? {
+            if let Some(vector) = self
+                .vector(vector_name, point_id, hw_counter)
+                .inspect_err(|_| log::debug!("could not find sparse vector {vector_name}"))?
+            {
                 result.insert(vector_name.clone(), vector);
             }
         }
@@ -417,19 +421,25 @@ impl SegmentEntry for ProxySegment {
             self.write_segment
                 .get()
                 .read()
-                .payload(point_id, hw_counter).inspect_err(|_| log::debug!("Error reading payload from write segment"))
+                .payload(point_id, hw_counter)
+                .inspect_err(|_| log::debug!("Error reading payload from write segment"))
         } else {
             {
                 let write_segment = self.write_segment.get();
                 let segment_guard = write_segment.read();
                 if segment_guard.has_point(point_id) {
-                    return segment_guard.payload(point_id, hw_counter).inspect_err(|_| log::debug!("Error reading payload from write segment (bis)"));
+                    return segment_guard
+                        .payload(point_id, hw_counter)
+                        .inspect_err(|_| {
+                            log::debug!("Error reading payload from write segment (bis)")
+                        });
                 }
             }
             self.wrapped_segment
                 .get()
                 .read()
-                .payload(point_id, hw_counter).inspect_err(|_| log::debug!("Error reading payload from wrapped segment"))
+                .payload(point_id, hw_counter)
+                .inspect_err(|_| log::debug!("Error reading payload from wrapped segment"))
         }
     }
 
