@@ -153,8 +153,7 @@ impl ProxySegment {
                 }
             };
 
-            // Prevent other operations from accessing the wrapped segment while we move the point
-            let wrapped_segment_guard = wrapped_segment.write();
+            let wrapped_segment_guard = wrapped_segment.read();
 
             // Since `deleted_points` are shared between multiple ProxySegments,
             // It is possible that some other Proxy moved its point with different version already
@@ -262,7 +261,17 @@ impl ProxySegment {
         // (or others). Careful locking management is very important here. Instead we just take an
         // upgradable read lock, upgrading to a write lock on demand.
         // See: <https://github.com/qdrant/qdrant/pull/4206>
-        let wrapped_segment = self.wrapped_segment.get();
+        let wrapped_segment: Arc<RwLock<dyn SegmentEntry>> = match &self.wrapped_segment {
+            LockedSegment::Original(raw_segment) => {
+                log::debug!("propagate_to_wrapped on raw segment");
+                raw_segment.clone()
+            }
+            LockedSegment::Proxy(sub_proxy) => {
+                log::debug!("propagate_to_wrapped on proxy segment");
+                sub_proxy.clone()
+            }
+        };
+
         let mut wrapped_segment = wrapped_segment.upgradable_read();
 
         // Propagate index changes before point deletions

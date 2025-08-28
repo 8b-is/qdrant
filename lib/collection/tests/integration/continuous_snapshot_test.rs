@@ -105,6 +105,21 @@ async fn test_continuous_snapshot() {
         let stop_flag = Arc::clone(&stop_flag);
         tokio::spawn(async move {
             while !stop_flag.load(Ordering::Relaxed) {
+                // Delete all points
+                let delete_points =
+                    CollectionUpdateOperations::PointOperation(PointOperations::DeletePoints {
+                        ids: (0..points_count).map(|i| i.into()).collect(),
+                    });
+                let hw_counter = HwMeasurementAcc::disposable();
+                collection
+                    .update_from_client_simple(
+                        delete_points,
+                        true,
+                        WriteOrdering::default(),
+                        hw_counter,
+                    )
+                    .await?;
+
                 for i in 0..points_count {
                     // Insert one point at a time
                     let point = PointStructPersisted {
