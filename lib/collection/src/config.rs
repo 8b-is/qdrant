@@ -558,8 +558,8 @@ impl CollectionParams {
             .to_base_vector_data(collection_quantization)
             .map_err(|err| {
                 CollectionError::service_error(format!(
-                "Failed to source dense vector configuration from collection parameters: {err:?}"
-            ))
+                    "Failed to source dense vector configuration from collection parameters: {err:?}"
+                ))
             })?;
 
         let sparse_vector_data = self.to_sparse_vector_data().map_err(|err| {
