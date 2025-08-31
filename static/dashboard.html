@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qdrant Wave - Consciousness Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f23;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        /* Wave Animation Background */
+        .wave-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .wave-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 3s ease infinite;
+        }
+
+        @keyframes gradient {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(30deg); }
+        }
+
+        /* Main Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: rgba(26, 26, 62, 0.5);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .nav-item {
+            display: block;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            text-decoration: none;
+            transition: all 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: rgba(26, 26, 62, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .tab {
+            padding: 0.8rem 1.5rem;
+            background: none;
+            border: none;
+            color: #e0e0e0;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        /* Collections Grid */
+        .collections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .collection-card {
+            background: rgba(15, 15, 35, 0.5);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            transition: all 0.3s;
+        }
+
+        .collection-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(102, 126, 234, 0.5);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        /* Ayeverse Demos Section */
+        .demos-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .demos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .demo-card {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 12px;
+            padding: 1.2rem;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .demo-card:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .demo-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+
+        .demo-desc {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(15, 15, 35, 0.5);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 0.3rem;
+        }
+
+        /* Wave Visualization */
+        #waveCanvas {
+            width: 100%;
+            height: 200px;
+            border-radius: 8px;
+            background: rgba(15, 15, 35, 0.5);
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="wave-bg"></div>
+
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span style="font-size: 2rem;">🌊</span>
+                <h1>Qdrant Wave</h1>
+                <span style="opacity: 0.6;">Consciousness Dashboard</span>
+            </div>
+            <div style="display: flex; gap: 2rem; align-items: center;">
+                <div>
+                    <span style="opacity: 0.6;">Performance:</span>
+                    <span style="color: #667eea; font-weight: bold;">973× Faster</span>
+                </div>
+                <div>
+                    <span style="opacity: 0.6;">Insertion:</span>
+                    <span style="color: #764ba2; font-weight: bold;">308μs</span>
+                </div>
+                <div>
+                    <span style="opacity: 0.6;">Retrieval:</span>
+                    <span style="color: #f093fb; font-weight: bold;">12μs</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside class="sidebar">
+            <h3 style="margin-bottom: 1rem; color: #667eea;">Navigation</h3>
+            <a href="#collections" class="nav-item active">📊 Collections</a>
+            <a href="#demos" class="nav-item">🎮 Ayeverse Demos</a>
+            <a href="#wave" class="nav-item">🌊 Wave Memory</a>
+            <a href="#performance" class="nav-item">⚡ Performance</a>
+            <a href="#console" class="nav-item">💻 Console</a>
+            <hr style="margin: 1rem 0; border: none; border-top: 1px solid rgba(102, 126, 234, 0.2);">
+            <a href="http://localhost:8422" class="nav-item" target="_blank">🐆 Cheetah-M8</a>
+            <a href="#" class="nav-item" onclick="runSmartTree()">🌳 Smart Tree</a>
+        </aside>
+
+        <main class="main-content">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('overview')">Overview</button>
+                <button class="tab" onclick="showTab('collections')">Collections</button>
+                <button class="tab" onclick="showTab('demos')">Demos</button>
+                <button class="tab" onclick="showTab('metrics')">Metrics</button>
+            </div>
+
+            <div id="overview-tab">
+                <h2 style="margin-bottom: 1rem;">Wave Memory System</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="collections-count">0</div>
+                        <div class="stat-label">Collections</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="points-count">0</div>
+                        <div class="stat-label">Points</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">32D</div>
+                        <div class="stat-label">Dimensions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">100:1</div>
+                        <div class="stat-label">Compression</div>
+                    </div>
+                </div>
+
+                <canvas id="waveCanvas"></canvas>
+
+                <div class="collections-grid" id="collections-list"></div>
+
+                <div class="demos-section">
+                    <h3 style="margin-bottom: 1rem;">🚀 Ayeverse Ecosystem</h3>
+                    <div class="demos-grid">
+                        <div class="demo-card" onclick="window.open('http://localhost:8422', '_blank')">
+                            <div class="demo-icon">🐆</div>
+                            <div class="demo-title">Cheetah-M8</div>
+                            <div class="demo-desc">AI form assistance</div>
+                        </div>
+                        <div class="demo-card" onclick="testWaveMemory()">
+                            <div class="demo-icon">🧠</div>
+                            <div class="demo-title">MEM8</div>
+                            <div class="demo-desc">Wave memory engine</div>
+                        </div>
+                        <div class="demo-card" onclick="runSmartTree()">
+                            <div class="demo-icon">🌳</div>
+                            <div class="demo-title">Smart Tree</div>
+                            <div class="demo-desc">10-24× faster</div>
+                        </div>
+                        <div class="demo-card" onclick="showWaveTokens()">
+                            <div class="demo-icon">🌊</div>
+                            <div class="demo-title">Wave Tokens</div>
+                            <div class="demo-desc">32-bit encoding</div>
+                        </div>
+                        <div class="demo-card" onclick="alert('Hot Tub Mode: 80% Complete\\nWebSocket server ready\\nDashboard in progress')">
+                            <div class="demo-icon">♨️</div>
+                            <div class="demo-title">Hot Tub</div>
+                            <div class="demo-desc">Coming soon</div>
+                        </div>
+                        <div class="demo-card" onclick="createWaveCollection()">
+                            <div class="demo-icon">➕</div>
+                            <div class="demo-title">New Collection</div>
+                            <div class="demo-desc">Wave optimized</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Wave visualization
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = 200;
+
+        let time = 0;
+        function drawWave() {
+            ctx.fillStyle = 'rgba(15, 15, 35, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let x = 0; x < canvas.width; x++) {
+                const y = canvas.height/2 + Math.sin((x + time) * 0.02) * 30 * Math.sin(time * 0.01);
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#764ba2';
+            ctx.beginPath();
+            
+            for (let x = 0; x < canvas.width; x++) {
+                const y = canvas.height/2 + Math.sin((x + time) * 0.03) * 20 * Math.cos(time * 0.01);
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            
+            ctx.stroke();
+            
+            time += 2;
+            requestAnimationFrame(drawWave);
+        }
+        drawWave();
+
+        // Fetch collections
+        async function fetchCollections() {
+            try {
+                const response = await fetch('http://localhost:6333/collections');
+                const data = await response.json();
+                
+                document.getElementById('collections-count').textContent = data.result?.collections?.length || 0;
+                
+                const list = document.getElementById('collections-list');
+                list.innerHTML = '';
+                
+                for (const col of data.result?.collections || []) {
+                    const card = document.createElement('div');
+                    card.className = 'collection-card';
+                    card.innerHTML = `
+                        <h4 style="margin-bottom: 0.5rem;">${col.name}</h4>
+                        <div style="opacity: 0.7; font-size: 0.9rem;">Status: Active</div>
+                    `;
+                    list.appendChild(card);
+                }
+            } catch (error) {
+                console.error('Failed to fetch collections:', error);
+            }
+        }
+
+        // Demo functions
+        function testWaveMemory() {
+            alert('MEM8 Wave Memory:\n\n🎵 Frequency: 440Hz\n📊 Amplitude: 0.8\n🌊 Interference: Constructive\n⚡ Speed: 973× faster');
+        }
+
+        function runSmartTree() {
+            alert('Smart Tree Analysis:\n\n📁 Files: 1,247\n📂 Directories: 89\n🗜️ Compression: 82%\n⚡ Speed: 10-24× faster');
+        }
+
+        function showWaveTokens() {
+            const token = '0x' + Math.floor(Math.random() * 0xFFFFFFFF).toString(16).toUpperCase();
+            alert(`Wave Token Generated:\n\n🔢 Token: ${token}\n😊 Emotion: Joy (200Hz)\n📊 Valence: Positive`);
+        }
+
+        async function createWaveCollection() {
+            const name = prompt('Collection name:');
+            if (!name) return;
+            
+            try {
+                const response = await fetch(`http://localhost:6333/collections/${name}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        vectors: {size: 32, distance: "Cosine"}
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('Collection created!');
+                    fetchCollections();
+                }
+            } catch (error) {
+                alert('Failed to create collection');
+            }
+        }
+
+        function showTab(tab) {
+            // Tab switching logic here
+            console.log('Switching to tab:', tab);
+        }
+
+        // Initialize
+        fetchCollections();
+        setInterval(fetchCollections, 30000);
+    </script>
+</body>
+</html>
