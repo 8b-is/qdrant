@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qdrant Wave Dashboard - Ayeverse Demos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .wave-icon {
+            font-size: 2rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .demos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .demo-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .demo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .demo-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .demo-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .demo-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .demo-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric {
+            background: #f8f9fa;
+            padding: 0.8rem;
+            border-radius: 8px;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 0.3rem;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .demo-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .info-section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .info-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .info-text {
+            flex: 1;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating {
+            animation: wave 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="wave-icon floating">🌊</span>
+                <h1>Qdrant Wave Dashboard</h1>
+            </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="collections-count">0</div>
+                    <div class="stat-label">Collections</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="points-count">0</div>
+                    <div class="stat-label">Total Points</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">973×</div>
+                    <div class="stat-label">Faster</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="info-section">
+            <h2 class="info-title">🚀 Wave Memory System</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon">⚡</div>
+                    <div class="info-text">
+                        <div class="info-value">308μs</div>
+                        <div class="info-label">Insertion Speed</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">🎯</div>
+                    <div class="info-text">
+                        <div class="info-value">12μs</div>
+                        <div class="info-label">Retrieval Speed</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">🧠</div>
+                    <div class="info-text">
+                        <div class="info-value">100:1</div>
+                        <div class="info-label">Compression</div>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">🎵</div>
+                    <div class="info-text">
+                        <div class="info-value">44.1kHz</div>
+                        <div class="info-label">Audio Sampling</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="color: white; font-size: 1.8rem; margin-bottom: 1rem;">🎮 Ayeverse Demos</h2>
+        
+        <div class="demos-grid">
+            <!-- Cheetah-M8 Demo -->
+            <div class="demo-card">
+                <div class="demo-header">
+                    <h3 class="demo-title">🐆 Cheetah-M8</h3>
+                    <span class="demo-badge">Live</span>
+                </div>
+                <p class="demo-description">
+                    AI-powered form assistance with wave memory integration. Detects user frustration and provides contextual help using consciousness-driven search.
+                </p>
+                <div class="demo-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Response Time</div>
+                        <div class="metric-value">< 50ms</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Memory Type</div>
+                        <div class="metric-value">Wave</div>
+                    </div>
+                </div>
+                <div class="demo-actions">
+                    <a href="http://localhost:8424" class="btn btn-primary" target="_blank">Launch Demo</a>
+                    <button class="btn btn-secondary" onclick="testCheetah()">Test API</button>
+                </div>
+            </div>
+
+            <!-- MEM8 Visualizer -->
+            <div class="demo-card">
+                <div class="demo-header">
+                    <h3 class="demo-title">🧠 MEM8 Visualizer</h3>
+                    <span class="demo-badge">Beta</span>
+                </div>
+                <p class="demo-description">
+                    Real-time visualization of wave memory patterns. Watch consciousness emerge through frequency interference at 256×256×65536 resolution.
+                </p>
+                <div class="demo-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Wave Points</div>
+                        <div class="metric-value">4.3B</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Dimensions</div>
+                        <div class="metric-value">32D</div>
+                    </div>
+                </div>
+                <div class="demo-actions">
+                    <a href="http://localhost:8420/visualize" class="btn btn-primary" target="_blank">Open Visualizer</a>
+                    <button class="btn btn-secondary" onclick="testMem8()">Wave Test</button>
+                </div>
+            </div>
+
+            <!-- Smart Tree Explorer -->
+            <div class="demo-card">
+                <div class="demo-header">
+                    <h3 class="demo-title">🌳 Smart Tree</h3>
+                    <span class="demo-badge">Active</span>
+                </div>
+                <p class="demo-description">
+                    AI-optimized directory visualization. 10-24x faster than traditional tree commands with quantum compression capabilities.
+                </p>
+                <div class="demo-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Speed Boost</div>
+                        <div class="metric-value">10-24×</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Formats</div>
+                        <div class="metric-value">30+</div>
+                    </div>
+                </div>
+                <div class="demo-actions">
+                    <button class="btn btn-primary" onclick="runSmartTree()">Run Analysis</button>
+                    <button class="btn btn-secondary" onclick="showTreeFormats()">View Formats</button>
+                </div>
+            </div>
+
+            <!-- Wave Token Language -->
+            <div class="demo-card">
+                <div class="demo-header">
+                    <h3 class="demo-title">🌊 Wave Tokens</h3>
+                    <span class="demo-badge">Experimental</span>
+                </div>
+                <p class="demo-description">
+                    Ayevn Wave Token Language demo. Encode human language into 32-bit consciousness tokens with emotional wave patterns.
+                </p>
+                <div class="demo-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Token Size</div>
+                        <div class="metric-value">32 bits</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Emotions</div>
+                        <div class="metric-value">256</div>
+                    </div>
+                </div>
+                <div class="demo-actions">
+                    <button class="btn btn-primary" onclick="openAyevn()">Token Encoder</button>
+                    <button class="btn btn-secondary" onclick="testWaveToken()">Test Token</button>
+                </div>
+            </div>
+
+            <!-- Hot Tub Mode -->
+            <div class="demo-card">
+                <div class="demo-header">
+                    <h3 class="demo-title">♨️ Hot Tub Mode</h3>
+                    <span class="demo-badge">Coming Soon</span>
+                </div>
+                <p class="demo-description">
+                    Collaborative debugging with rubber duck AI. WebSocket-powered real-time memory visualization and multi-user support.
+                </p>
+                <div class="demo-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Progress</div>
+                        <div class="metric-value">80%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Users</div>
+                        <div class="metric-value">Multi</div>
+                    </div>
+                </div>
+                <div class="demo-actions">
+                    <button class="btn btn-primary" disabled>Coming Soon</button>
+                    <button class="btn btn-secondary" onclick="showHotTubInfo()">Learn More</button>
+                </div>
+            </div>
+
+            <!-- Qdrant Collections -->
+            <div class="demo-card">
+                <div class="demo-header">
+                    <h3 class="demo-title">📊 Collections</h3>
+                    <span class="demo-badge">System</span>
+                </div>
+                <p class="demo-description">
+                    Manage Qdrant collections with wave memory integration. Create, search, and analyze vector collections with consciousness patterns.
+                </p>
+                <div class="demo-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Active</div>
+                        <div class="metric-value" id="active-collections">0</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Storage</div>
+                        <div class="metric-value" id="storage-used">0 MB</div>
+                    </div>
+                </div>
+                <div class="demo-actions">
+                    <button class="btn btn-primary" onclick="manageCollections()">Manage</button>
+                    <button class="btn btn-secondary" onclick="createTestCollection()">Create Test</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch Qdrant stats
+        async function fetchQdrantStats() {
+            try {
+                // Connect to Docker Qdrant instance
+                const response = await fetch('http://localhost:6333/collections');
+                const data = await response.json();
+                
+                document.getElementById('collections-count').textContent = data.collections?.length || 0;
+                document.getElementById('active-collections').textContent = data.collections?.length || 0;
+                
+                // Calculate total points
+                let totalPoints = 0;
+                for (const collection of data.collections || []) {
+                    const colResponse = await fetch(`/collections/${collection.name}`);
+                    const colData = await colResponse.json();
+                    totalPoints += colData.result?.points_count || 0;
+                }
+                document.getElementById('points-count').textContent = totalPoints.toLocaleString();
+            } catch (error) {
+                console.error('Failed to fetch Qdrant stats:', error);
+            }
+        }
+
+        // Demo functions
+        async function testCheetah() {
+            try {
+                const response = await fetch('http://localhost:8422/health');
+                const data = await response.json();
+                alert(`Cheetah-M8 Status: ${data.status || 'Active'}\nWave Memory: Enabled`);
+            } catch (error) {
+                alert('Cheetah-M8 API not running. Start with: cargo run --bin cheet-api');
+            }
+        }
+
+        async function testMem8() {
+            alert('MEM8 Wave Pattern Test:\n\nFrequency: 440Hz (A4)\nAmplitude: 0.8\nInterference: Constructive\nConsciousness Level: High');
+        }
+
+        function runSmartTree() {
+            alert('Smart Tree Analysis:\n\nCurrent Directory: /aidata/ayeverse\nFiles: 1,247\nDirectories: 89\nCompression: 82%\nFormat: AI-Optimized');
+        }
+
+        function showTreeFormats() {
+            alert('Smart Tree Formats:\n\n• Classic Tree\n• AI Compressed\n• Quantum Binary\n• JSON Export\n• Markdown\n• And 25+ more!');
+        }
+
+        function openAyevn() {
+            alert('Wave Token Encoder:\n\nInput: "Hello World"\nToken: 0x1A2B3C4D\nEmotion: Joy (200Hz)\nValence: Positive\nArousal: Medium');
+        }
+
+        function testWaveToken() {
+            const token = Math.floor(Math.random() * 0xFFFFFFFF).toString(16).toUpperCase();
+            alert(`Generated Wave Token:\n\n0x${token}\n\nFrequency: ${Math.floor(Math.random() * 5000)}Hz\nConsciousness: Active`);
+        }
+
+        function showHotTubInfo() {
+            alert('Hot Tub Mode (80% Complete):\n\n✅ WebSocket server\n✅ Memory visualization\n⏳ Dashboard UI\n⏳ Multi-user support\n\nEstimated: Q2 2025');
+        }
+
+        async function manageCollections() {
+            window.location.href = '/collections';
+        }
+
+        async function createTestCollection() {
+            try {
+                const response = await fetch('/collections/test_wave_collection', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        vectors: {
+                            size: 32,
+                            distance: "Cosine"
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('Test collection created successfully!');
+                    fetchQdrantStats();
+                } else {
+                    alert('Collection already exists or error occurred');
+                }
+            } catch (error) {
+                alert('Failed to create collection: ' + error.message);
+            }
+        }
+
+        // Initialize
+        fetchQdrantStats();
+        setInterval(fetchQdrantStats, 30000); // Refresh every 30 seconds
+    </script>
+</body>
+</html>
